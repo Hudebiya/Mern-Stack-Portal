@@ -8,9 +8,25 @@ const cookieOptions = {
     secure: process.env.NODE_ENV === "production"
 }
 
+function publicUser(user) {
+    return {
+        id: user._id,
+        name: user.username,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        specialization: user.specialization,
+        experience: user.experience
+    }
+}
+
 async function registerUser(req, res) {
    try {
-    const { username,email, password } = req.body;
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: "username, email and password are required" })
+    }
 
     const userAlreadyExists= await userModel.findOne({
         $or:[
@@ -27,7 +43,8 @@ async function registerUser(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
 
-    const user= await userModel.create({username,email, password:hash,role:"user"})
+    // role is always "patient" for public registration
+    const user= await userModel.create({username,email, password:hash,role:"patient"})
     const token= jwt.sign({
         id: user._id,
         role: user.role
@@ -37,54 +54,59 @@ async function registerUser(req, res) {
 
     res.status(201).json({
         message:"User created sucessfully",
-        user: { id: user._id, name: user.username, email: user.email, role: user.role },
+        user: publicUser(user),
         token
     })
    } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
-    
    }
 }
 
 async function loginUser(req, res) {
-    const {username, email, password } = req.body;
-    const user = await userModel.findOne({
-        $or:[
-            {username},
-            {email}
-        ]
-    })
-
-    if(!user){
-        return res.status(404).json({
-            message:"User not found"
+    try {
+        const {username, email, password } = req.body;
+        const user = await userModel.findOne({
+            $or:[
+                {username},
+                {email}
+            ]
         })
-    }
-    if (!user.password) {
-        return res.status(400).json({ message: "Please sign in with Google" })
-    }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if(!isPasswordValid){
-        return res.status(401).json({
-            message:"Invalid password"
+
+        if(!user){
+            return res.status(404).json({
+                message:"User not found"
+            })
+        }
+        if (!user.password) {
+            return res.status(400).json({ message: "Please sign in with Google" })
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if(!isPasswordValid){
+            return res.status(401).json({
+                message:"Invalid password"
+            })
+        }
+        if (user.isActive === false) {
+            return res.status(403).json({ message: "Account is deactivated" })
+        }
+
+        const token= jwt.sign({
+            id: user._id,
+            role: user.role
+        },process.env.JWT_SECRET_KEY, { expiresIn: "7d" })
+
+        res.cookie("token",token,cookieOptions)
+
+        res.status(200).json({
+            message:"User logged in sucessfully",
+            user: publicUser(user),
+            token
         })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: "Internal server error" })
     }
-
-    const token= jwt.sign({
-        id: user._id,
-        role: user.role
-    },process.env.JWT_SECRET_KEY, { expiresIn: "7d" })
-
-    res.cookie("token",token,cookieOptions)
-
-    res.status(200).json({
-        message:"User logged in sucessfully",
-        user: { id: user._id, name: user.username, email: user.email, role: user.role },
-        token
-    })
-    
-
 }
 
 async function getCurrentUser(req, res) {
@@ -95,7 +117,7 @@ async function getCurrentUser(req, res) {
         }
 
         res.status(200).json({
-            user: { id: user._id, name: user.username, username: user.username, email: user.email, role: user.role }
+            user: publicUser(user)
         })
     } catch (error) {
         console.error(error)

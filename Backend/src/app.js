@@ -10,6 +10,10 @@ import cartRoutes from "./routes/cart.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import cookieParser from "cookie-parser";
 const app = express();
+import doctorRoutes from "./routes/doctor.routes.js";
+import appointmentRoutes from "./routes/appointment.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+
 app.set("trust proxy", 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 const configuredClientUrls = process.env.CLIENT_URL
@@ -37,5 +41,8 @@ app.use("/api/auth", authRoutes)
 app.use("/api/product", productRoutes)
 app.use("/api/cart",cartRoutes )
 app.use("/api/orders", orderRoutes)
+app.use("/api/doctors", doctorRoutes)
+app.use("/api/appointments", appointmentRoutes)
+app.use("/api/admin", adminRoutes)
 
 export default app;

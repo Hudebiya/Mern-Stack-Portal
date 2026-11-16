@@ -22,9 +22,12 @@ const userSchema= new mongoose.Schema({
     },
     role:{
         type: String,
-        default: "user",
-        enum:["user","admin"]
+        default: "patient",
+        enum:["user","admin","doctor","patient"]
     },
+    specialization: { type: String },
+    experience: { type: Number },
+    isActive: { type: Boolean, default: true },
     cart:[{
         product:{
             type:mongoose.Schema.Types.ObjectId,
