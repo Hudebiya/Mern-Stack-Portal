@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { homeFor, useAuth } from '../context/AuthContext.jsx'
 import AuthLayout from '../components/AuthLayout.jsx'
 import InputField from '../components/InputField.jsx'
 import { getApiErrorMessage, registerUser } from '../api/axios.js'
@@ -7,6 +8,7 @@ import { getApiErrorMessage, registerUser } from '../api/axios.js'
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function Signup() {
+  const { setUser } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({
     name: '',
@@ -54,15 +56,22 @@ function Signup() {
 
     setIsSubmitting(true)
     try {
-      await registerUser({
+      const response = await registerUser({
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
       })
-      navigate('/login', {
-        replace: true,
-        state: { successMessage: 'Your account was created. You can now sign in.' },
-      })
+      const data = response?.data ?? response
+      if (data?.token) localStorage.setItem('token', data.token)
+      if (data?.token && data?.user?.role) {
+        setUser(data.user)
+        navigate(homeFor(data.user.role), { replace: true })
+      } else {
+        navigate('/login', {
+          replace: true,
+          state: { successMessage: 'Your account was created. You can now sign in.' },
+        })
+      }
     } catch (error) {
       setServerError(
         getApiErrorMessage(error, 'Unable to create your account. Please try again.'),

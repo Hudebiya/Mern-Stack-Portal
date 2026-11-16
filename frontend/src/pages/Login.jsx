@@ -46,14 +46,20 @@ function Login() {
 
     setIsSubmitting(true)
     try {
-      await loginUser({ email: form.email.trim(), password: form.password })
-      navigate('/dashboard', { replace: true })
+      const response = await loginUser({ email: form.email.trim(), password: form.password })
+      const data = response?.data ?? response
+      if (!data?.user?.role) throw new Error('Login response did not include a user.')
+      if (data.token) localStorage.setItem('token', data.token)
+      setUser(data.user)
+      navigate(homeFor(data.user.role), { replace: true })
     } catch (error) {
       setServerError(getApiErrorMessage(error, 'Unable to sign in. Please try again.'))
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  if (user) return <Navigate to={homeFor(user.role)} replace />
 
   const successMessage = location.state?.successMessage
 

@@ -16,7 +16,9 @@ import AllAppointments from './pages/admin/AllAppointments.jsx'
 
 function RoleRedirect() {
   const { user, loading } = useAuth()
-  if (loading) return null
+  if (loading) {
+    return <div className="p-10 text-center text-slate-500">Loading…</div>
+  }
   return <Navigate to={user ? homeFor(user.role) : '/login'} replace />
 }
 
@@ -55,7 +57,7 @@ function App() {
           <Route path="appointments" element={<AllAppointments />} />
         </Route>
 
-        <Route path="*" element={<RoleRedirect />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>
   )

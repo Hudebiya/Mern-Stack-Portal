@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import api from '../api/axios.js'
 
 const AuthContext = createContext(null)
@@ -10,15 +10,31 @@ export function homeFor(role) {
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUserState] = useState(null)
   const [loading, setLoading] = useState(true)
+  const authUpdatedRef = useRef(false)
+
+  const setUser = useCallback((nextUser) => {
+    authUpdatedRef.current = true
+    setUserState(nextUser)
+  }, [])
 
   useEffect(() => {
+    let active = true
     api
       .get('/api/auth/me')
-      .then((res) => setUser(res.data.user))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false))
+      .then((res) => {
+        if (active && !authUpdatedRef.current) setUserState(res.data.user)
+      })
+      .catch(() => {
+        if (active && !authUpdatedRef.current) setUserState(null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   async function logout() {
@@ -26,8 +42,10 @@ export function AuthProvider({ children }) {
       await api.post('/api/auth/logout')
     } catch {
       // ignore
+    } finally {
+      localStorage.removeItem('token')
+      setUser(null)
     }
-    setUser(null)
   }
 
   return (
