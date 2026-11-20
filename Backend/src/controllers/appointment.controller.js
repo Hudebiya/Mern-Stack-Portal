@@ -15,16 +15,20 @@ export async function createAppointment(req, res) {
             return res.status(404).json({ message: "Doctor not found" });
         }
 
-        const date = new Date(appointmentDate);
+                const date = new Date(appointmentDate);
         if (isNaN(date.getTime())) {
             return res.status(400).json({ message: "Invalid date" });
         }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const dateOnly = new Date(date);
-        dateOnly.setHours(0, 0, 0, 0);
-        if (dateOnly < today) {
-            return res.status(400).json({ message: "Cannot book appointment in the past" });
+
+        const dateStr = String(appointmentDate).slice(0, 10);
+        const slot = new Date(`${dateStr}T${appointmentTime}:00+05:00`);
+        if (isNaN(slot.getTime())) {
+            return res.status(400).json({ message: "Invalid date or time" });
+        }
+        if (slot <= new Date()) {
+            return res.status(400).json({
+                message: "This time has already passed. Please choose a later time."
+            });
         }
 
         const existing = await appointmentModel.findOne({

@@ -13,6 +13,7 @@ import DoctorRequests from './pages/doctor/DoctorRequests.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import ManageUsers from './pages/admin/ManageUsers.jsx'
 import AllAppointments from './pages/admin/AllAppointments.jsx'
+import ThemeToggle from './components/ThemeToggle.jsx'
 
 function RoleRedirect() {
   const { user, loading } = useAuth()
@@ -33,6 +34,7 @@ function Guarded({ role }) {
 function App() {
   return (
     <AuthProvider>
+            <ThemeToggle />
       <Routes>
         <Route path="/" element={<RoleRedirect />} />
         <Route path="/dashboard" element={<RoleRedirect />} />

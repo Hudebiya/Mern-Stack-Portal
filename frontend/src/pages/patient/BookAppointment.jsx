@@ -9,6 +9,10 @@ function todayLocal() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 }
 
+function nowTime() {
+  return new Date().toTimeString().slice(0, 5)
+}
+
 export default function BookAppointment() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -32,6 +36,10 @@ export default function BookAppointment() {
     e.preventDefault()
     if (!form.doctor || !form.appointmentDate || !form.appointmentTime || !form.reason.trim()) {
       setError('Please fill in all fields.')
+      return
+    }
+        if (form.appointmentDate === todayLocal() && form.appointmentTime <= nowTime()) {
+      setError('This time has already passed today. Please choose a later time.')
       return
     }
     setSaving(true)
@@ -85,6 +93,7 @@ export default function BookAppointment() {
             <input
               type="time"
               name="appointmentTime"
+              min={form.appointmentDate === todayLocal() ? nowTime() : undefined}
               value={form.appointmentTime}
               onChange={update}
               className={inputClass}
