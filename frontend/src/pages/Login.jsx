@@ -8,7 +8,7 @@ import { getApiErrorMessage, loginUser } from '../api/axios.js'
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function Login() {
-  const { user, setUser } = useAuth()
+  const { user, setUser, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [form, setForm] = useState({ email: '', password: '' })
@@ -59,7 +59,11 @@ function Login() {
     }
   }
 
-  if (user) return <Navigate to={homeFor(user.role)} replace />
+  if (loading) {
+    return <div className="p-10 text-center text-slate-500">Loading…</div>
+  }
+  const home = user && homeFor(user.role)
+  if (home) return <Navigate to={home} replace />
 
   const successMessage = location.state?.successMessage
 

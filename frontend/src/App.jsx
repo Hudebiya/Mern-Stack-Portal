@@ -20,7 +20,7 @@ function RoleRedirect() {
   if (loading) {
     return <div className="p-10 text-center text-slate-500">Loading…</div>
   }
-  return <Navigate to={user ? homeFor(user.role) : '/login'} replace />
+  return <Navigate to={(user && homeFor(user.role)) || '/login'} replace />
 }
 
 function Guarded({ role }) {

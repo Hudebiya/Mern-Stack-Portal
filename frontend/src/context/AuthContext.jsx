@@ -6,7 +6,8 @@ const AuthContext = createContext(null)
 export function homeFor(role) {
   if (role === 'admin') return '/admin'
   if (role === 'doctor') return '/doctor'
-  return '/patient'
+  if (role === 'patient') return '/patient'
+  return null
 }
 
 export function AuthProvider({ children }) {
