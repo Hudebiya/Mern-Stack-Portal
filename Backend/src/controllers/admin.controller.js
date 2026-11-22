@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs";
 import userModel from "../models/users.model.js";
 import appointmentModel from "../models/Appointment.model.js";
 
+function emailPattern(email) {
+    const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`^\\s*${escapedEmail}\\s*$`, "i");
+}
+
 export async function getAllUsers(req, res) {
     try {
         const filter = {};
@@ -19,14 +24,17 @@ export async function addDoctor(req, res) {
         if (!username || !email || !password || !specialization) {
             return res.status(400).json({ message: "username, email, password and specialization are required" });
         }
-        const exists = await userModel.findOne({ $or: [{ email }, { username }] });
+        const normalizedEmail = email.trim().toLowerCase();
+        const exists = await userModel.findOne({
+            $or: [{ email: emailPattern(normalizedEmail) }, { username }]
+        });
         if (exists) {
             return res.status(409).json({ message: "Username or email already exists" });
         }
         const hashed = await bcrypt.hash(password, 10);
         const doctor = await userModel.create({
             username,
-            email,
+            email: normalizedEmail,
             password: hashed,
             role: "doctor",
             specialization,

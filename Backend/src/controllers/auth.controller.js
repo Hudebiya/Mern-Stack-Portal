@@ -2,6 +2,11 @@ import userModel from "../models/users.model.js";
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 
+function emailPattern(email) {
+    const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`^\\s*${escapedEmail}\\s*$`, "i");
+}
+
 const cookieOptions = {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -28,10 +33,11 @@ async function registerUser(req, res) {
         return res.status(400).json({ message: "username, email and password are required" })
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const userAlreadyExists= await userModel.findOne({
         $or:[
             {username},
-            {email}
+            {email: emailPattern(normalizedEmail)}
         ]
     })
 
@@ -44,7 +50,7 @@ async function registerUser(req, res) {
     const hash = await bcrypt.hash(password, 10);
 
     // role is always "patient" for public registration
-    const user= await userModel.create({username,email, password:hash,role:"patient"})
+    const user= await userModel.create({username,email: normalizedEmail, password:hash,role:"patient"})
     const token= jwt.sign({
         id: user._id,
         role: user.role
@@ -66,12 +72,16 @@ async function registerUser(req, res) {
 async function loginUser(req, res) {
     try {
         const {username, email, password } = req.body;
-        const user = await userModel.findOne({
-            $or:[
-                {username},
-                {email}
-            ]
-        })
+        const loginEmail = typeof email === "string" ? email.trim() : "";
+        const loginUsername = typeof username === "string" ? username.trim() : "";
+        if (!loginEmail && !loginUsername) {
+            return res.status(400).json({ message: "email or username is required" });
+        }
+        const user = await userModel.findOne(
+            loginEmail
+                ? { email: emailPattern(loginEmail) }
+                : { username: loginUsername }
+        );
 
         if(!user){
             return res.status(404).json({

@@ -3,27 +3,32 @@ import mongoose from "mongoose";
 import userModel from "./src/models/users.model.js";
 import bcrypt from "bcryptjs";
 
-const [username, email, password, ...extraArgs] = process.argv.slice(2);
+const [username, rawEmail, password, ...extraArgs] = process.argv.slice(2);
 
-if (!username || !email || !password || extraArgs.length > 0) {
+if (!username || !rawEmail || !password || extraArgs.length > 0) {
     console.error("Usage: node seedAdmin.js <username> <email> <password>");
     process.exitCode = 1;
 } else {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
 
+        const email = rawEmail.trim().toLowerCase();
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const existingUser = await userModel.findOne({ email });
         if (existingUser) {
             existingUser.role = "admin";
+            existingUser.password = hashedPassword;
+            existingUser.isActive = true;
             await existingUser.save();
-            console.log(`Promoted ${email} to admin.`);
+            console.log(`Updated ${email}: role is admin and password was reset.`);
         } else {
-            const hashedPassword = await bcrypt.hash(password, 10);
             await userModel.create({
                 username,
                 email,
                 password: hashedPassword,
                 role: "admin",
+                isActive: true,
             });
             console.log(`Created admin user ${email}.`);
         }
